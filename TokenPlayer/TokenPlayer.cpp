@@ -138,7 +138,7 @@ void contextCheck() {
 	}
 }
 
-//THis function transforms a c++ string to LPWSTR c_str
+//This function transforms a c++ string to LPWSTR c_str
 LPWSTR stringToLPWSTR(const std::string& instr) {
 	// Assumes std::string is encoded in the current Windows ANSI codepage
 	int bufferlen = MultiByteToWideChar(CP_ACP, 0, instr.c_str(), instr.size(), NULL, 0);
