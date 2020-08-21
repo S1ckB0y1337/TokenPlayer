@@ -48,7 +48,11 @@ To compile it yourself you will need to install the [boost](https://www.boost.or
 - [T1134: Primary Access Token Manipulation](https://www.ired.team/offensive-security/privilege-escalation/t1134-access-token-manipulation)
 - [Privilege escalation through Token Manipulation](https://hacknpentest.com/privilege-escalation-through-token-manipulation/)
 - [Creating a Child Process with Redirected Input and Output](https://docs.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output?redirectedfrom=MSDN)
-- [Juicy Potato (abusing the golden privileges)](https://github.com/ohpe/juicy-potato)
+- [Reading Your Way Around UAC (Part 1)](https://www.tiraniddo.dev/2017/05/reading-your-way-around-uac-part-1.html)
+- [Reading Your Way Around UAC (Part 2)](https://www.tiraniddo.dev/2017/05/reading-your-way-around-uac-part-2.html)
+- [Reading Your Way Around UAC (Part 3)](https://www.tiraniddo.dev/2017/05/reading-your-way-around-uac-part-3.html)
+- [UAC-TokenMagic.ps1](https://github.com/FuzzySecurity/PowerShell-Suite/blob/master/UAC-TokenMagic.ps1)
+- [UAC-TokenDuplication](https://github.com/ThunderGunExpress/UAC-TokenDuplication)
 - [RunasCs](https://github.com/antonioCoco/RunasCs)
 
 
