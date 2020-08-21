@@ -3,8 +3,12 @@ Abusing and Manipulating Windows Access Tokens.
 
 ___TokenPlayer___ is just a small tool i made to learn win32 api programming and understand better the access token model of windows.
 
-## Info:
-The two main functions are stealing and impersonating a token from another process and creating tokens from scratch by providing valid credentials. It can impersonate even processes that have PPL (Protected Process Light) enabled by using the *PROCESS_QUERY_LIMITED_INFORMATION* flag on OpenProcess() function. This will let us open a handle to even protected processes. For making a new token it uses the CreateProcessWithLogonW() function, so no special privileges are required. Also it provides the option to be used from a non interactive context (e.g. a reverse shell) by using two pipes for parent-child process communication, but also provides the option to spawn a new window instance of command prompt with the impersonated context.
+## Features:
+- Stealing and Impersonating primary tokens.
+- Impersonating Protected Processes.
+- It can be used from non-interactive contexts (e.g. reverse shell) by using pipes for parent-child process communication.
+- Making new tokens for network authentication by providing credentials (similar to runas /netonly) without the need for special rights or elevated context.
+- Bypassing UAC by using the Token-Duplication method.
 
 ## Usage:
 ```
