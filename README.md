@@ -19,7 +19,8 @@ Impersonation Options:
                          stolen token.
 
 Execution Options:
-  --exec                 Execute an instance of a specified program under the impersonated context.
+  --exec                 Execute an instance of a specified program under the
+                         impersonated context.
   --pid arg              Proccess ID to steal the token from.
   --prog                 The full path to the program to be executed.
   --args                 Optional execution arguments for the specified
@@ -32,6 +33,10 @@ Make Token Options:
   --password arg         Password in plaintext format.
   --domain arg           The domain the user belongs, if domain isn't specified
                          the local machine will be used.
+
+UAC Bypass Options:
+  --pwnuac               Will try to bypass UAC using the token-duplication
+                         method.
 ```
 
 ## Compile Instructions
