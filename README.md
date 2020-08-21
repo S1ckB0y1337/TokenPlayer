@@ -35,7 +35,7 @@ Make Token Options:
 ```
 
 ## Compile Instructions
-To compile it yourself you will need to install the [boost](https://www.boost.org/) library, because it uses it for parsing and handling the command line arguments. Also you'll need to spcify the external library's folder on the project's settings.
+To compile it yourself you will need to install the [boost](https://www.boost.org/) library, because it uses it for parsing and handling the command line arguments. Also you'll need to specify the external library's folder on the project's settings.
 
 ## References
 - [Windows Access Tokens and Alternate Credentials](https://blog.cobaltstrike.com/2015/12/16/windows-access-tokens-and-alternate-credentials/)
