@@ -27,7 +27,7 @@ Execution Options:
                          program.
 
 Make Token Options:
-  --make                 Create a new process under a set of creds for only
+  --maketoken            Create a new process under a set of creds for only
                          network authentication (Similar to runas /netonly).
   --username arg         Username
   --password arg         Password in plaintext format.
