@@ -38,12 +38,12 @@ Make Token Options:
 To compile it yourself you will need to install the [boost](https://www.boost.org/) library, because it uses it for parsing and handling the command line arguments. Also you'll need to spcify the external library's folder on the project's settings.
 
 ## References
--[Windows Access Tokens and Alternate Credentials](https://blog.cobaltstrike.com/2015/12/16/windows-access-tokens-and-alternate-credentials/)
--[Understanding and Defending Against Access Token Theft](https://posts.specterops.io/understanding-and-defending-against-access-token-theft-finding-alternatives-to-winlogon-exe-80696c8a73b)
--[T1134: Primary Access Token Manipulation](https://www.ired.team/offensive-security/privilege-escalation/t1134-access-token-manipulation)
--[Privilege escalation through Token Manipulation](https://hacknpentest.com/privilege-escalation-through-token-manipulation/)
--[Creating a Child Process with Redirected Input and Output](https://docs.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output?redirectedfrom=MSDN)
--[Juicy Potato (abusing the golden privileges)](https://github.com/ohpe/juicy-potato)
--[RunasCs](https://github.com/antonioCoco/RunasCs)
+- [Windows Access Tokens and Alternate Credentials](https://blog.cobaltstrike.com/2015/12/16/windows-access-tokens-and-alternate-credentials/)
+- [Understanding and Defending Against Access Token Theft](https://posts.specterops.io/understanding-and-defending-against-access-token-theft-finding-alternatives-to-winlogon-exe-80696c8a73b)
+- [T1134: Primary Access Token Manipulation](https://www.ired.team/offensive-security/privilege-escalation/t1134-access-token-manipulation)
+- [Privilege escalation through Token Manipulation](https://hacknpentest.com/privilege-escalation-through-token-manipulation/)
+- [Creating a Child Process with Redirected Input and Output](https://docs.microsoft.com/en-us/windows/win32/procthread/creating-a-child-process-with-redirected-input-and-output?redirectedfrom=MSDN)
+- [Juicy Potato (abusing the golden privileges)](https://github.com/ohpe/juicy-potato)
+- [RunasCs](https://github.com/antonioCoco/RunasCs)
 
 
