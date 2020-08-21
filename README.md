@@ -19,7 +19,7 @@ Impersonation Options:
                          stolen token.
 
 Execution Options:
-  --exec                 Execute an instance of a specified program.
+  --exec                 Execute an instance of a specified program under the impersonated context.
   --pid arg              Proccess ID to steal the token from.
   --prog                 The full path to the program to be executed.
   --args                 Optional execution arguments for the specified
