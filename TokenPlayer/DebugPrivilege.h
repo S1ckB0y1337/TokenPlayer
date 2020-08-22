@@ -47,10 +47,7 @@ BOOL EnableDebugPrivilege(void) {
 			break;
 		}
 	}
-
-	if (!hasDebugPrivilege) {
-		return false;
-	}
+	
 	//Now lets prepare the structure for the privilege we try to enable
 	TOKEN_PRIVILEGES tp;
 	tp.PrivilegeCount = 1;
