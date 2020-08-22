@@ -147,7 +147,7 @@
     <ClCompile Include="TokenPlayer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DebugPrivilege.h" />
+    <ClInclude Include="EnablePrivilege.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
