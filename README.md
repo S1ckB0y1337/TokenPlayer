@@ -42,6 +42,9 @@ UAC Bypass Options:
   --pwnuac               Will try to bypass UAC using the token-duplication
                          method.
   --spawn                Spawns a new elevated prompt.
+  --prog arg             The full path to the program to be executed.
+  --args arg             Optional execution arguments for the specified
+                         program.
 ```
 
 ## Compile Instructions
