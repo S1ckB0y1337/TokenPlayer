@@ -41,6 +41,7 @@ Make Token Options:
 UAC Bypass Options:
   --pwnuac               Will try to bypass UAC using the token-duplication
                          method.
+  --spawn                Spawns a new elevated prompt.
 ```
 
 ## Compile Instructions
