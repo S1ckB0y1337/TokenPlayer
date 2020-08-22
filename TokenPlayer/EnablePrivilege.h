@@ -4,7 +4,7 @@
 
 //A function to enable SeDebugPrivilege if you have the proper rights
 BOOL EnablePrivilege(LPCWSTR privilege) {
-	//First lets get the LUID of the SeDebugPrivilege
+	//First lets get the LUID of the provided privilege
 	LUID privLuid;
 	if (!LookupPrivilegeValue(NULL, privilege, &privLuid)) {
 		printf("LookupPrivilegeValue error() : % u\n", GetLastError());
