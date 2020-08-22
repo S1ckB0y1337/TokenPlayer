@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
 	all.add(general_desc).add(impersonate_desc).add(exec_desc).add(maketoken_desc).add(uacbypass_desc);
 	//Make another options list to store the same settings but without the duplicate pid argument
 	po::options_description all_literal("");
-	all_literal.add(general_desc).add(impersonate_desc).add(exec_literal).add(maketoken_desc).add(uacbypass_desc);
+	all_literal.add(general_desc).add(impersonate_desc).add(exec_literal).add(maketoken_desc).add(uacbypass_literal);
 	//Next lets create a map for the arguments
 	po::variables_map vm;
 	po::store(parse_command_line(argc, argv, all_literal), vm);
