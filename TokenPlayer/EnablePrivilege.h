@@ -1,3 +1,9 @@
+/*
+    File: EnablePrivilege.h
+    Author: @S1ckB0y1337
+    License: MIT License
+*/
+
 #include <stdio.h>
 #include <tchar.h>
 #include <Windows.h>
