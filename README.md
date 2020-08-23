@@ -48,6 +48,21 @@ UAC Bypass Options:
                          program.
 ```
 
+## Usage 1: Token Impersonation
+### Using same console:
+![Token Impersonation](https://github.com/S1ckB0y1337/TokenPlayer/blob/master/Examples/impersonation.png)
+### Spawning a new console:
+![Token Impersonation In New Window](https://github.com/S1ckB0y1337/TokenPlayer/blob/master/Examples/impersonationInNewWindow.png)
+
+## Usage 2: Executing an application (e.g. rev shell)
+![Executing Reverse Shell](https://github.com/S1ckB0y1337/TokenPlayer/blob/master/Examples/revshellImpersonation.png)
+
+## Usage 3: Make Token
+![Make Token](https://github.com/S1ckB0y1337/TokenPlayer/blob/master/Examples/maketoken.png)
+
+## Usage 4: UAC Bypass
+![UAC Bypass](https://github.com/S1ckB0y1337/TokenPlayer/blob/master/Examples/uacpwned.png)
+
 ## Compile Instructions
 To compile it yourself you will need to install the [boost](https://www.boost.org/) library, because it uses it for parsing and handling the command line arguments. Also you'll need to specify the external library's folder on the project's settings.
 
