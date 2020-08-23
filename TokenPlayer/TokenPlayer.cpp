@@ -607,7 +607,7 @@ void bypassUAC(BOOL spawn) {
 		CloseHandle(pi.hProcess);
 		CloseHandle(pi.hThread);
 	} else {
-		redirectChildToParent(hToken, false);
+		redirectChildToParent(hToken, TRUE);
 	}
 }
 
