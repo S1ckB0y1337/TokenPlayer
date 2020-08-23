@@ -6,9 +6,10 @@ ___TokenPlayer___ is just a small tool i made to learn win32 api programming and
 ## Features:
 - Stealing and Impersonating primary tokens.
 - Impersonating Protected Processes.
-- It can be used from non-interactive contexts (e.g. reverse shell) by using pipes for parent-child process communication.
-- Making new tokens for network authentication by providing credentials (similar to runas /netonly) without the need for special rights or elevated context.
 - Bypassing UAC by using the Token-Duplication method.
+- Making new tokens for network authentication by providing credentials (similar to runas /netonly) without the need for special rights or elevated context.
+- Executes any application with provided parameters under an impersonated context.
+- Can be used from non-interactive contexts (e.g. reverse shell) by using pipes for parent-child process communication.
 
 ## Usage:
 ```
