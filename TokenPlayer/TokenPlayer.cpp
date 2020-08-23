@@ -1,3 +1,9 @@
+/*
+    File: TokenPlayer.cpp
+    Author: @S1ckB0y1337
+    License: MIT License
+*/
+
 #include <stdio.h>
 #include <iostream>
 #include <string>
