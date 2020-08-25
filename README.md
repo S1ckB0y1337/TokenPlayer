@@ -8,6 +8,7 @@ ___TokenPlayer___ is just a small tool i made to learn win32 api programming and
 - Impersonating Protected Processes.
 - Bypassing UAC by using the Token-Duplication method.
 - Making new tokens for network authentication by providing credentials (similar to runas /netonly) without the need for special rights or elevated context.
+- Spoof the parent process identifier and spawn a new process under an arbitary process.
 - Execute any application with provided parameters under an impersonated context.
 - Can be used from non-interactive contexts (e.g. reverse shell) by using pipes for parent-child process communication.
 
@@ -63,7 +64,7 @@ UAC Bypass Options:
 ## Usage 4: UAC Bypass
 ![UAC Bypass](https://github.com/S1ckB0y1337/TokenPlayer/blob/master/Examples/uacpwned.png)
 
-## Usage 4: PPID Spoofing
+## Usage 5: PPID Spoofing
 ![PPID Spoofing](https://github.com/S1ckB0y1337/TokenPlayer/blob/master/Examples/ppidspoofing.png)
 
 ## Compile Instructions
@@ -81,5 +82,7 @@ To compile it yourself you will need to install the [boost](https://www.boost.or
 - [UAC-TokenMagic.ps1](https://github.com/FuzzySecurity/PowerShell-Suite/blob/master/UAC-TokenMagic.ps1)
 - [UAC-TokenDuplication](https://github.com/ThunderGunExpress/UAC-TokenDuplication)
 - [RunasCs](https://github.com/antonioCoco/RunasCs)
+- [Access Token Manipulation: Parent PID Spoofing](https://attack.mitre.org/techniques/T1134/004/)
+- [Alternative methods of becoming SYSTEM](https://blog.xpnsec.com/becoming-system/)
 
 
