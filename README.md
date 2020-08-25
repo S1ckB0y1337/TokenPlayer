@@ -63,6 +63,9 @@ UAC Bypass Options:
 ## Usage 4: UAC Bypass
 ![UAC Bypass](https://github.com/S1ckB0y1337/TokenPlayer/blob/master/Examples/uacpwned.png)
 
+## Usage 4: PPID Spoofing
+![PPID Spoofing](https://github.com/S1ckB0y1337/TokenPlayer/blob/master/Examples/ppidspoofing.png)
+
 ## Compile Instructions
 To compile it yourself you will need to install the [boost](https://www.boost.org/) library, because it uses it for parsing and handling the command line arguments. Also you'll need to specify the external library's folder on the project's settings.
 
