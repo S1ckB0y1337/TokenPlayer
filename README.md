@@ -1,5 +1,5 @@
 # TokenPlayer
-Abusing and Manipulating Windows Access Tokens.
+Manipulating and Abusing Windows Access Tokens.
 
 ___TokenPlayer___ is just a small tool i made to learn win32 api programming and understand better the access token model of windows.
 
