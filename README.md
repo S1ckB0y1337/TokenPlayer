@@ -47,6 +47,14 @@ UAC Bypass Options:
   --prog arg             The full path to the program to be executed.
   --args arg             Optional execution arguments for the specified
                          program.
+
+Parent Process Spoofing Options:
+  --spoofppid            Spawn a new instance of an application with spoofed
+                         parent process.
+  --ppid arg             The PID of the parent process.
+  --prog arg             The full path to the program to be executed.
+  --args arg             Optional execution arguments for the specified
+                         program.
 ```
 
 ## Usage 1: Token Impersonation
