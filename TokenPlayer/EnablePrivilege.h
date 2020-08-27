@@ -8,7 +8,7 @@
 #include <tchar.h>
 #include <Windows.h>
 
-//A function to enable SeDebugPrivilege if you have the proper rights
+//A function to enable privileges if you have the proper rights
 BOOL EnablePrivilege(LPCWSTR privilege) {
 	//First lets get the LUID of the provided privilege
 	LUID privLuid;
