@@ -419,7 +419,7 @@ void redirectChildToParent(HANDLE hToken, BOOL isRestricted) {
 		bSuccess = ReadFile(hStdin, chBuf, BUFSIZE, &dwRead, NULL);
 		bSuccess = WriteFile(childInWrite, chBuf, dwRead, &dwWritten, NULL);
 		//A small sleep to give time to the write operation to execute before we try to read from the pipe again
-		Sleep(100);
+		Sleep(1000);
 	}
 	WaitForSingleObject(processInformation.hProcess, INFINITE);
 	LocalFree(chBuf);
